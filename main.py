@@ -16,8 +16,8 @@ app = Flask(__name__, static_url_path='/static',
 app.config['SECRET_KEY'] = '43845eab2bbba1dce738c8446ad12f8fc03dd86ad88f7716'
 
 #route pro RestAPI
-@app.route('/api/check-name/<name>',methods=['GET', 'POST'])
-def api(name):
+@app.route('/api/check-email/<email>', methods=['GET', 'POST'])
+def api(email):
 
     #nemá smysl když může být člověk se stejným jménem 
     # není implementovaná, byla vytvořena pro nickname
@@ -26,7 +26,7 @@ def api(name):
     temp = []
 
     #načtení dat z data.csv (https://docs.python.org/3/library/csv.html)
-    data = open('data.csv', 'r')
+    data = open('data.csv', 'r', encoding='utf-8')
     with data:
         reader = csv.reader(data, delimiter=',')
         for typek in reader:
@@ -34,14 +34,10 @@ def api(name):
 
     # checkne jestli je nickname uz v data.csv
     for uzivatel in temp:
-        if(name == uzivatel[0]):
-            return {
-                'avalible' : False
-                }
+        if(str(email) == uzivatel[0]):
+            return "NOT OK"
 
-    return {
-        'avalible' : True
-    }
+    return "OK"
 
 # route pro domovskou stránku
 @app.route('/', methods=['GET', 'POST'])
@@ -66,6 +62,7 @@ def index():
 def check():
 
     # Hodnoty
+    email = request.form['email']
     jmeno = request.form['jmeno']
     prijmeni = request.form['prijmeni']
     trida = request.form['trida']
@@ -74,10 +71,16 @@ def check():
     kanoe_kamarad_pr = request.form['kanoe_kamarad_pr']
 
     # Kontroly
+
     if ((je_plavec == "1") or (je_plavec == 1)):
         je_plavec = "Ano"
     else:
         je_plavec = "Ne"
+
+    emailr = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+
+    if not re.fullmatch(emailr, email):
+        return render_template("neprovedeno.html"), 400
 
     if not re.search("^[a-zA-Z0-9áčďéěíňóřšťůúýžÁČĎÉĚÍŇÓŘŠŤŮÚÝŽ]{2,20}$", jmeno):
         return render_template("neprovedeno.html"), 400
@@ -86,10 +89,10 @@ def check():
         return render_template("neprovedeno.html"), 400
 
     if (not(re.search("^[a-zA-ZáčďéěíňóřšťůúýžÁČĎÉĚÍŇÓŘŠŤŮÚÝŽ]{2,20}$", kanoe_kamarad_jm)) or not(re.search("^[a-zA-ZáčďéěíňóřšťůúýžÁČĎÉĚÍŇÓŘŠŤŮÚÝŽ]{2,20}$", kanoe_kamarad_pr))):
-        storage.append([jmeno, prijmeni, trida, je_plavec, "Nemá", " "])
+        storage.append([email, jmeno, prijmeni, trida, je_plavec, "Nemá", " "])
 
     if ((re.search("^[a-zA-ZáčďéěíňóřšťůúýžÁČĎÉĚÍŇÓŘŠŤŮÚÝŽ]{2,20}$", kanoe_kamarad_jm) and (re.search("^[a-zA-ZáčďéěíňóřšťůúýžÁČĎÉĚÍŇÓŘŠŤŮÚÝŽ]{2,20}$", kanoe_kamarad_pr)))):
-        storage.append([jmeno, prijmeni, trida, je_plavec, kanoe_kamarad_jm, kanoe_kamarad_pr])
+        storage.append([email, jmeno, prijmeni, trida, je_plavec, kanoe_kamarad_jm, kanoe_kamarad_pr])
 
     # Převedení storage do stringu    
     temp = ""
